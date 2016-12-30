@@ -22,14 +22,25 @@
             android:layout_height="wrap_content"
             android:text="@string/title_activity_search"
             />
+        <AutoCompleteTextView
+            android:visibility="gone"
+            android:popupBackground="@color/red_light"
+            android:completionHintView="@android:layout/simple_dropdown_item_1line"
+            android:background="@android:color/transparent"
+            android:id="@+id/searchView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:imeOptions="actionSearch"
+            android:inputType="textAutoComplete|textAutoCorrect"
+            android:textColor="#FFFFFF" >
+
+            <requestFocus />
+        </AutoCompleteTextView>
+
     </android.support.v7.widget.Toolbar>
 
 
-    <include layout="@layout/view_search_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"  >
-
-    </include>
 
     <android.support.v4.view.ViewPager
         android:layout_weight="1"
