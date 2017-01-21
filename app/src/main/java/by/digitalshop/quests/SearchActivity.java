@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import by.digitalshop.quests.fragments.SearchHistoryFragment;
+import by.digitalshop.quests.fragments.SearchPopularFragment;
 
 public class SearchActivity extends BaseActivity {
 
@@ -72,6 +74,12 @@ public class SearchActivity extends BaseActivity {
 
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_search,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
     private class HistoryPagerAdapter extends FragmentStatePagerAdapter {
 
         public HistoryPagerAdapter(FragmentManager fm) {
@@ -85,13 +93,16 @@ public class SearchActivity extends BaseActivity {
 
         @Override
         public Fragment getItem(int position) {
-            return new SearchHistoryFragment();
+            switch (position) {
+                case 0:
+                    return new SearchHistoryFragment();
+                case 1:
+                    return new SearchPopularFragment();
+                default:
+                    return null;
+            }
         }
 
-        @Override
-        public boolean isViewFromObject(View view, Object object) {
-            return false;
-        }
     }
     public class CustomerAdapter extends ArrayAdapter<String> {
         private final String MY_DEBUG_TAG = "CustomerAdapter";

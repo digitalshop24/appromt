@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="70dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_marginTop="10dp"
+        android:textColor="@color/purple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:maxEms="100"
+        android:ellipsize="end"
+        android:id="@+id/title"
+        android:text="Title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        />
+    <TextView
+        android:layout_marginTop="2dp"
+        android:textColor="@color/purple"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="2"
+        android:ellipsize="end"
+        android:id="@+id/desciption"
+        android:text="Description sadjsadojsajdas"
+        android:textSize="16sp"
+        />
+
+</LinearLayout>

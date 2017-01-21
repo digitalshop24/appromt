@@ -49,16 +49,6 @@
         android:layout_marginLeft="20dp"
         android:src="@drawable/ic_menu"/>
 
-    <ImageView
-        android:id="@+id/btn_search"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginLeft="20dp"
-        android:layout_marginTop="20dp"
-        android:src="@drawable/ic_search_red"/>
-
     <View
         android:id="@+id/dummy"
         android:layout_width="0dp"
@@ -102,6 +92,38 @@
             android:layout_height="wrap_content"
             android:src="@drawable/add_point"/>
 
+    </FrameLayout>
+
+    <ImageView
+        android:id="@+id/btn_search"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_alignLeft="@+id/btn_menu"
+        android:layout_alignStart="@+id/btn_menu"
+        android:layout_alignTop="@+id/btn_zoom_in"
+        android:src="@drawable/ic_search_red"/>
+
+    <FrameLayout
+        android:id="@+id/slider_background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="true"
+        android:visibility="gone">
+
+        <by.digitalshop.quests.PagerContainer
+            android:id="@+id/container_slider"
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:layout_centerInParent="true"
+            android:layout_gravity="center">
+
+            <android.support.v4.view.ViewPager
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginLeft="30dp"
+                android:layout_marginRight="30dp"/>
+        </by.digitalshop.quests.PagerContainer>
     </FrameLayout>
 
 </RelativeLayout>

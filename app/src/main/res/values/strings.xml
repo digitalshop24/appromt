@@ -7,4 +7,6 @@
 
     <string name="history_search">История поиска</string>
     <string name="popular_search">Популярные запросы</string>
+    <string name="distance_to">Distance to</string>
+    <string name="notification_title">Something near</string>
 </resources>
