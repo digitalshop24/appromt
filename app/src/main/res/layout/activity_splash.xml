@@ -32,7 +32,7 @@
         android:textAppearance="?android:textAppearanceLarge"
         android:layout_above="@+id/center_sep"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="40dp" />
+        android:layout_marginBottom="20dp" />
 
     <TextView
         android:textColor="@android:color/white"
@@ -70,7 +70,7 @@
         android:onClick="onClickMap"
         android:layout_width="100dp"
         android:layout_height="120dp"
-        android:src="@drawable/ic_logo_redmarker"
+        android:src="@drawable/ic_splash"
         android:layout_marginBottom="20dp"
         android:layout_above="@+id/title"
         android:layout_centerHorizontal="true" />

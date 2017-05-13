@@ -4,6 +4,8 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 
+import by.digitalshop.quests.utils.PreferenceUtils;
+
 public class SplashActivity extends BaseActivity {
 
     @Override
@@ -12,13 +14,21 @@ public class SplashActivity extends BaseActivity {
         setContentView(R.layout.activity_splash);
         getSupportActionBar().hide();
         setStatusBarColor(Color.BLACK);
+        if(!PreferenceUtils.isFirstStart(this)){
+            finish();
+            startActivity(MapActivity.buildIntent(this));
+        }else{
+            PreferenceUtils.setFirstStart(this,false);
+        }
     }
 
     public void onStartClick(View w) {
-        startActivity(SearchActivity.buildIntent(this));
+        startActivity(MapActivity.buildIntent(this));
+        finish();
     }
 
     public void onClickMap(View v) {
         startActivity(MapActivity.buildIntent(this));
+        finish();
     }
 }

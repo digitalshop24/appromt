@@ -16,22 +16,17 @@
 
         >
 
-        <AutoCompleteTextView
-            android:popupBackground="@color/red_light"
-            android:completionHintView="@android:layout/simple_dropdown_item_1line"
-            android:background="@android:color/transparent"
-            android:id="@+id/searchView"
+
+        <com.seatgeek.placesautocomplete.PlacesAutocompleteTextView
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            android:id="@+id/places_autocomplete"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:ems="10"
-            android:hint="@string/title_activity_search"
-            android:imeOptions="actionSearch"
-            android:inputType="textAutoComplete|textAutoCorrect"
-            android:textColor="#FFFFFF" >
-
-            <requestFocus />
-        </AutoCompleteTextView>
-
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1"
+            android:imeOptions="actionDone"
+            android:ellipsize="end"
+            app:pacv_googleMapsApiKey="AIzaSyDTDqVGIHTL4JyRgrV7rdHEYq0HNE59aek"/>
     </android.support.v7.widget.Toolbar>
 
 

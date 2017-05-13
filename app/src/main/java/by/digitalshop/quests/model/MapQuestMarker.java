@@ -1,9 +1,9 @@
 package by.digitalshop.quests.model;
 
 import org.greenrobot.greendao.annotation.Entity;
-import org.greenrobot.greendao.annotation.Generated;
 import org.greenrobot.greendao.annotation.Id;
 import org.greenrobot.greendao.annotation.Keep;
+import org.greenrobot.greendao.annotation.Generated;
 
 /**
  * Created by CoolerBy on 27.12.2016.
@@ -17,6 +17,7 @@ public class MapQuestMarker {
     private double longitude;
     private String title;
     private String text;
+    private boolean isNotified;
 
     @Keep
     public MapQuestMarker(double latitude, double longitude, String title,
@@ -27,19 +28,26 @@ public class MapQuestMarker {
         this.text = text;
     }
 
-    @Generated(hash = 995391519)
-    public MapQuestMarker() {
-    }
 
-    @Generated(hash = 1976098379)
+
+    @Generated(hash = 1698274540)
     public MapQuestMarker(Long id, double latitude, double longitude, String title,
-                          String text) {
+            String text, boolean isNotified) {
         this.id = id;
         this.latitude = latitude;
         this.longitude = longitude;
         this.title = title;
         this.text = text;
+        this.isNotified = isNotified;
     }
+
+
+
+    @Generated(hash = 995391519)
+    public MapQuestMarker() {
+    }
+
+  
 
     public double getLatitude() {
         return this.latitude;
@@ -85,6 +93,15 @@ public class MapQuestMarker {
         this.id = id;
     }
 
+    public boolean isNotified() {
+        return isNotified;
+    }
+
+    public void setNotified(boolean notified) {
+        isNotified = notified;
+    }
+
+
     @Override
     public String toString() {
         return "MapQuestMarker{" +
@@ -95,4 +112,14 @@ public class MapQuestMarker {
                 ", text='" + text + '\'' +
                 '}';
     }
+
+    public boolean getIsNotified() {
+        return this.isNotified;
+    }
+
+    public void setIsNotified(boolean isNotified) {
+        this.isNotified = isNotified;
+    }
+    
+
 }

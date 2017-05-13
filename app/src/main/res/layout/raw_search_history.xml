@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="70dp"
+    android:background="@android:color/white">
+
+    <TextView
+        android:layout_weight="0.1"
+        android:id="@+id/time"
+        android:textColor="@color/grey_disable"
+        android:layout_width="80dp"
+        android:layout_margin="8dp"
+        android:textSize="12sp"
+        android:gravity="center"
+        android:layout_height="match_parent"
+        android:text="1/10/2017"/>
+
+    <LinearLayout
+        android:layout_weight="0.6"
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    <TextView
+        android:layout_weight="1"
+        android:layout_margin="8dp"
+        android:gravity="center_vertical|left"
+        android:textColor="@color/purple"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:maxLines="2"
+        android:maxEms="100"
+        android:ellipsize="end"
+        android:id="@+id/title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        />
+        <ImageView
+            android:id="@+id/marker"
+            android:src="@drawable/ic_marker"
+            android:layout_marginTop="8dp"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_width="24dp"
+            android:layout_height="24dp" />
+    </LinearLayout>
+
+</LinearLayout>

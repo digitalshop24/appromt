@@ -11,8 +11,8 @@
 
     <ImageView
         android:id="@+id/btn_zoom_in"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true"
         android:layout_marginRight="20dp"
@@ -21,8 +21,8 @@
 
     <ImageView
         android:id="@+id/btn_zoom_out"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentRight="true"
         android:layout_below="@id/btn_zoom_in"
         android:layout_marginRight="20dp"
@@ -31,8 +31,8 @@
 
     <ImageView
         android:id="@+id/btn_gps_fix"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:layout_marginBottom="20dp"
@@ -41,13 +41,14 @@
 
     <ImageView
         android:id="@+id/btn_menu"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:layout_marginBottom="20dp"
         android:layout_marginLeft="20dp"
         android:src="@drawable/ic_menu"/>
+
 
     <View
         android:id="@+id/dummy"
@@ -58,56 +59,46 @@
     <FrameLayout
         android:id="@+id/btn_create"
         android:layout_width="150dp"
-        android:layout_height="140dp"
+        android:layout_height="150dp"
         android:layout_above="@id/dummy"
         android:layout_centerHorizontal="true">
 
         <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:src="@drawable/chat"/>
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_add_point"/>
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:paddingBottom="20dp"
-            android:text="Создать"
-            android:textAllCaps="true"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold"/>
     </FrameLayout>
 
     <FrameLayout
         android:id="@+id/btn_add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
         android:layout_above="@id/dummy"
         android:layout_centerHorizontal="true"
         android:visibility="gone">
 
         <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/add_point"/>
+            android:layout_gravity="center"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_add_point"/>
 
     </FrameLayout>
 
     <ImageView
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
         android:id="@+id/btn_search"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:layout_alignLeft="@+id/btn_menu"
-        android:layout_alignStart="@+id/btn_menu"
-        android:layout_alignTop="@+id/btn_zoom_in"
-        android:src="@drawable/ic_search_red"/>
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/ic_search"/>
 
     <FrameLayout
         android:id="@+id/slider_background"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clickable="true"
         android:visibility="gone">
 
         <by.digitalshop.quests.PagerContainer
@@ -124,6 +115,27 @@
                 android:layout_marginLeft="30dp"
                 android:layout_marginRight="30dp"/>
         </by.digitalshop.quests.PagerContainer>
+
+        <ImageView
+            android:id="@+id/btn_delete"
+            android:visibility="visible"
+            android:clickable="true"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/ic_delete_cross"/>
+
+        <ImageView
+            android:id="@+id/btn_back_slider"
+            android:visibility="visible"
+            android:clickable="true"
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:layout_gravity="left|bottom"
+            android:layout_marginLeft="20dp"
+            android:layout_marginBottom="20dp"
+            android:src="@drawable/ic_back"/>
     </FrameLayout>
 
 </RelativeLayout>

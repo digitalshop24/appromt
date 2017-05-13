@@ -2,39 +2,51 @@ package by.digitalshop.quests;
 
 import android.content.Context;
 import android.content.Intent;
+import android.location.Location;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
-import android.widget.Filter;
-import android.widget.TextView;
 
-import java.util.ArrayList;
+import com.seatgeek.placesautocomplete.OnPlaceSelectedListener;
+import com.seatgeek.placesautocomplete.PlacesApi;
+import com.seatgeek.placesautocomplete.PlacesAutocompleteTextView;
+import com.seatgeek.placesautocomplete.history.AutocompleteHistoryManager;
+import com.seatgeek.placesautocomplete.model.AutocompleteResultType;
+import com.seatgeek.placesautocomplete.model.Place;
+
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
+import by.digitalshop.quests.adapter.SimplePlaceAdapter;
 import by.digitalshop.quests.fragments.SearchHistoryFragment;
 import by.digitalshop.quests.fragments.SearchPopularFragment;
+import by.digitalshop.quests.model.SearchHistoryItem;
+import se.walkercrou.places.GooglePlaces;
 
 public class SearchActivity extends BaseActivity {
+    private final static String  EXTRA_LAT = "EXTRA_LAT";
+    private final static String  EXTRA_LON = "EXTRA_LON";
 
-    private static final String[] COUNTRIES = new String[] { "Belgium",
-            "France", "France_", "Italy", "Germany", "Spain" };
-    final String ATTRIBUTE_NAME_TEXT = "text";
-
-    public static Intent buildIntent(Context context){
-        return new Intent(context,SearchActivity.class);
+    public static Intent buildIntent(Context context,double lat,double lon){
+        Intent intent = new Intent(context, SearchActivity.class);
+        intent.putExtra(EXTRA_LAT,lat);
+        intent.putExtra(EXTRA_LON,lon);
+        return intent;
     }
+
+    private double mLat,mLon;
+    private String title,placeID;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,40 +56,82 @@ public class SearchActivity extends BaseActivity {
         Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
 
-        ViewPager pager = (ViewPager) findViewById(R.id.pager);
+        final ViewPager pager = (ViewPager) findViewById(R.id.pager);
         HistoryPagerAdapter  mPagerAdapter = new HistoryPagerAdapter(getSupportFragmentManager());
         pager.setAdapter(mPagerAdapter);
 
-        // упаковываем данные в понятную для адаптера структуру
-        final ArrayList<Map<String, Object>> data = new ArrayList<Map<String, Object>>(
-                COUNTRIES.length);
-        Map<String, Object> m;
-        for (int i = 0; i < COUNTRIES.length; i++) {
-            m = new HashMap<String, Object>();
-            m.put(ATTRIBUTE_NAME_TEXT, COUNTRIES[i]);
-            data.add(m);
-        }
-        // массив имен атрибутов, из которых будут читаться данные
-        String[] from = { ATTRIBUTE_NAME_TEXT };
-        // массив ID View-компонентов, в которые будут вставлять данные
-        int[] to = { android.R.id.text1 };
+        View viewById = findViewById(R.id.places_autocomplete);
 
-        // создаем адаптер
-        List<String> strings = Arrays.asList(COUNTRIES);
-        CustomerAdapter sAdapter = new CustomerAdapter(this,R.layout.view_search_dropdown, new ArrayList<String>(strings));
+        final PlacesAutocompleteTextView autocompleteTextView = (PlacesAutocompleteTextView) viewById;
+        autocompleteTextView.setResultType(AutocompleteResultType.ADDRESS);
+        autocompleteTextView.setLanguageCode("ru");
+        autocompleteTextView.setRadiusMeters(2000L);
 
-//        final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
-//                 R.layout.view_search_dropdown, COUNTRIES);
-       final AutoCompleteTextView textView = (AutoCompleteTextView)findViewById(R.id.searchView);
+        autocompleteTextView.setLocationBiasEnabled(true);
+        double lat = getIntent().getDoubleExtra(EXTRA_LAT, 0.0);
+        double lon = getIntent().getDoubleExtra(EXTRA_LON, 0.0);
 
-        textView.setAdapter(sAdapter);
+        Location targetLocation = new Location("");
+        targetLocation.setAccuracy(1);
+        targetLocation.setLatitude(lat);//your coords of course
+        targetLocation.setLongitude(lon);
 
+        PlacesApi api = autocompleteTextView.getApi();
+        AutocompleteHistoryManager historyManager = autocompleteTextView.getHistoryManager();
+
+        final SimplePlaceAdapter adapter = new SimplePlaceAdapter(this,api,
+                AutocompleteResultType.ADDRESS,historyManager);
+        autocompleteTextView.setAdapter(adapter);
+
+        autocompleteTextView.setCurrentLocation(targetLocation);
+        autocompleteTextView.setOnPlaceSelectedListener(new OnPlaceSelectedListener() {
+            @Override
+            public void onPlaceSelected(@NonNull final Place place) {
+                final List<String> split = Arrays.asList(place.description.split(","));
+                String s = split.get(0);
+                autocompleteTextView.setText(s);
+
+                final Runnable target = new Runnable() {
+                    @Override
+                    public void run() {
+                        GooglePlaces googlePlaces = new GooglePlaces(("AIzaSyDTDqVGIHTL4JyRgrV7rdHEYq0HNE59aek"));
+                        se.walkercrou.places.Place placeById = googlePlaces.getPlaceById(place.place_id);
+
+                        title = place.description;
+                        placeID = place.place_id;
+
+                        mLat = placeById.getLatitude();
+                        mLon = placeById.getLongitude();
+                    }
+                };
+                new Thread(target).start();
+            }
+        });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_search,menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId())
+        {
+            case R.id.action_done:
+                if(TextUtils.isEmpty(placeID)) {
+                    Log.e("TAG","place id is empty");
+                    return false;
+                }
+                startActivity(MapActivity.startIntentMap(this,mLat,mLon,placeID));
+                // TODO check selected fragment
+                // save to db
+                SearchHistoryItem searchItem = new SearchHistoryItem(mLat,mLon,title,placeID,new Date().getTime());
+                DsqApplication.sDaoSession.getSearchHistoryItemDao().save(searchItem);
+
+        }
+        return false;
     }
 
     private class HistoryPagerAdapter extends FragmentStatePagerAdapter {
@@ -102,78 +156,5 @@ public class SearchActivity extends BaseActivity {
                     return null;
             }
         }
-
-    }
-    public class CustomerAdapter extends ArrayAdapter<String> {
-        private final String MY_DEBUG_TAG = "CustomerAdapter";
-        private ArrayList<String> items;
-        private ArrayList<String> itemsAll;
-        private ArrayList<String> suggestions;
-        private int viewResourceId;
-
-        public CustomerAdapter(Context context, int viewResourceId, ArrayList<String> items) {
-            super(context, viewResourceId, items);
-            this.items = items;
-            this.itemsAll = (ArrayList<String>) items.clone();
-            this.suggestions = new ArrayList<String>();
-            this.viewResourceId = viewResourceId;
-        }
-
-        public View getView(int position, View convertView, ViewGroup parent) {
-            View v = convertView;
-            if (v == null) {
-                LayoutInflater vi = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-                v = vi.inflate(viewResourceId, null);
-            }
-            String t = items.get(position);
-            if (t != null) {
-                TextView customerNameLabel = (TextView) v.findViewById(android.R.id.text1);
-                if (customerNameLabel != null) {
-                    customerNameLabel.setText(t);
-                }
-            }
-            return v;
-        }
-
-        @Override
-        public Filter getFilter() {
-            return nameFilter;
-        }
-
-        final Filter nameFilter = new Filter() {
-            @Override
-            public String convertResultToString(Object resultValue) {
-                String str = ((String)(resultValue));
-                return str;
-            }
-            @Override
-            protected FilterResults performFiltering(CharSequence constraint) {
-                if(constraint != null) {
-                    suggestions.clear();
-                    for (String t : itemsAll) {
-                        if(t.toLowerCase().startsWith(constraint.toString().toLowerCase())){
-                            suggestions.add(t);
-                        }
-                    }
-                    FilterResults filterResults = new FilterResults();
-                    filterResults.values = suggestions;
-                    filterResults.count = suggestions.size();
-                    return filterResults;
-                } else {
-                    return new FilterResults();
-                }
-            }
-            @Override
-            protected void publishResults(CharSequence constraint, FilterResults results) {
-                ArrayList<String> filteredList = (ArrayList<String>) results.values;
-                if(results != null && results.count > 0) {
-                    clear();
-                    for (String c : filteredList) {
-                        add(c);
-                    }
-                    notifyDataSetChanged();
-                }
-            }
-        };
     }
 }

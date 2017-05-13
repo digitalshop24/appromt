@@ -9,8 +9,10 @@ import android.widget.TextView;
 
 import java.util.List;
 
+import by.digitalshop.quests.MapActivity;
 import by.digitalshop.quests.R;
 import by.digitalshop.quests.model.MapQuestMarker;
+import by.digitalshop.quests.utils.TextUtils;
 
 /**
  * Created by CoolerBy on 13.01.2017.
@@ -19,19 +21,35 @@ import by.digitalshop.quests.model.MapQuestMarker;
 public class MarkerPagerAdapter extends PagerAdapter {
     private List<MapQuestMarker> mMapQuestMarkers;
     private LayoutInflater mLayoutInflater;
+    private boolean isEdit = false;
+    private MapActivity mapActivity;
 
-    public MarkerPagerAdapter(Context context, List<MapQuestMarker> markers) {
-        mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+
+    public MarkerPagerAdapter(MapActivity activity, List<MapQuestMarker> markers) {
+        mLayoutInflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mMapQuestMarkers = markers;
+        isEdit = markers.size() == 1;
+        mapActivity = activity;
+
     }
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
         View view = mLayoutInflater.inflate(R.layout.fragment_slide, container, false);
         container.addView(view);
-        MapQuestMarker marker = mMapQuestMarkers.get(position);
-        ((TextView) view.findViewById(R.id.text_title)).setText(marker.getTitle());
-        ((TextView) view.findViewById(R.id.text_text)).setText(marker.getText());
+        final MapQuestMarker marker = mMapQuestMarkers.get(position);
+        String title = marker.getTitle();
+        ((TextView) view.findViewById(R.id.text_title)).setText(TextUtils.firstCapitalString(title));
+        String text = marker.getText();
+        ((TextView) view.findViewById(R.id.text_text)).setText(TextUtils.firstCapitalString(text));
+        ((TextView) view.findViewById(R.id.text_text)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(isEdit){
+                    mapActivity.editMarker(marker.getTitle(),marker.getText(),marker.getId());
+                }
+            }
+        });
         return view;
     }
 

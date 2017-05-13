@@ -8,6 +8,8 @@
 
     <color name="red_light">#FF0041</color>
     <color name="grey_light">#F3F3F3</color>
+    <color name="grey_disable">#A7A7A7</color>
+
     <color name="green_light">#63CB00</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>

@@ -11,7 +11,7 @@
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="20dp"
-        android:src="@drawable/add_point"/>
+        android:src="@drawable/ic_add_point"/>
 
     <LinearLayout
         android:id="@+id/layout1"
@@ -27,17 +27,25 @@
 
         <EditText
             android:id="@+id/edit_title"
+            style="@style/EditTextTitle"
+            android:hint="Назовите пункт"
+            android:padding="10dp"
+            android:inputType="textCapSentences"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
+            android:layout_height="25dp"
             android:layout_weight="0.2"
             android:background="@color/colorAccent"
             android:maxLength="20"
             android:maxLines="1"
-            android:singleLine="true"
             android:textColor="@color/white"
             android:textSize="18sp"/>
 
         <EditText
+            android:inputType="textCapSentences"
+            android:hint="О чём напомнить"
+            style="@style/EditTextBody"
+            android:gravity="top|left"
+            android:padding="20dp"
             android:id="@+id/edit_text"
             android:layout_width="match_parent"
             android:layout_height="0dp"
