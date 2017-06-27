@@ -224,7 +224,7 @@ public class LocationService extends Service {
 
                 if (notificationMessage.length() > 1) {
                     notificationMessage.setLength(notificationMessage.length() - 1);
-                    Notification notification = Notifications.createNotification(getApplicationContext(), getString(R.string.notification_title), notificationMessage.toString(),id,lat,lon);
+                    Notification notification = Notifications.createNotification(LocationService.this, getString(R.string.notification_title), notificationMessage.toString(),id,lat,lon);
                     notification.defaults |= Notification.DEFAULT_SOUND;
                     ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(ID_PROXIMITY_NOTIFICATION, notification);
                 }

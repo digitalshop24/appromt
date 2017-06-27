@@ -9,6 +9,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.location.Location;
@@ -55,9 +56,12 @@ import by.digitalshop.quests.event.MapMotionEvent;
 import by.digitalshop.quests.model.MapQuestMarker;
 import by.digitalshop.quests.model.MapQuestMarkerDao;
 import by.digitalshop.quests.model.Place;
+import by.digitalshop.quests.model.SearchHistoryItem;
 import by.digitalshop.quests.service.LocationService;
 import by.digitalshop.quests.utils.Notifications;
 import by.digitalshop.quests.utils.Utils;
+import by.digitalshop.quests.view.CreateMarkerRect;
+import by.digitalshop.quests.view.CurrentPlaceView;
 import ru.yandex.yandexmapkit.MapController;
 import ru.yandex.yandexmapkit.MapView;
 import ru.yandex.yandexmapkit.map.MapEvent;
@@ -66,6 +70,8 @@ import ru.yandex.yandexmapkit.overlay.Overlay;
 import ru.yandex.yandexmapkit.overlay.OverlayItem;
 import ru.yandex.yandexmapkit.utils.GeoPoint;
 import ru.yandex.yandexmapkit.utils.ScreenPoint;
+
+import static by.digitalshop.quests.R.id.btn_rectcreate;
 
 /**
  * Created by CoolerBy on 18.12.2016.
@@ -81,13 +87,13 @@ public class MapActivity extends BaseActivity implements
 
     private static final String TAG = "MapActivity";
     private static final int PERMISSION_LOCATION_REQUEST_CODE = 124;
-    private static final int BUTTON_DELAY = 2000;
+    private static final int BUTTON_DELAY = 1500;
     private static final int DEFAULT_ZOOM = 16;
 
-    private static final int SLIDER_HEIGHT_PADDING = 600;
+    private static final int SLIDER_HEIGHT_PADDING = 200;
 
-    public static final int PROXIMITY_THRESHOLD = 1000;
-    public static final int NOTIFICATION_THRESHOLD = 1000;
+    public static final int PROXIMITY_THRESHOLD = 150;
+    public static final int NOTIFICATION_THRESHOLD = 150;
     public static final int ID_PROXIMITY_NOTIFICATION = 123;
 
     public static final String ACTION_MOVE_FROM_HISTORY = "ACTION_MOVE_FROM_HISTORY";
@@ -96,11 +102,10 @@ public class MapActivity extends BaseActivity implements
     public static final String EXTRA_LAT = "EXTRA_LAT";
     public static final String EXTRA_LON = "EXTRA_LON";
     public static final String EXTRA_MARKER_ID = "EXTRA_MARKER_ID";
-    public static final String EXTRA_PLACE_ID = "EXTRA_PLACE_ID";
+    public static final String EXTRA_SEARCH_ID = "EXTRA_SEARCH_ID";
 
 
     private View buttonCreate;
-    private View buttonAdd;
     private View buttonSearch;
     private View buttonDelete;
     private View buttonBackSlider;
@@ -109,13 +114,15 @@ public class MapActivity extends BaseActivity implements
     private View buttonGpsFix;
     private View buttonMenu;
     private PagerContainer containerSlider;
+    private CreateMarkerRect buttonCreateMarkerRect;
     private FrameLayout sliderBackground;
 
     private MapView mMapView;
+    private CurrentPlaceView mCurrentPlace;
     private MapController mController;
     private GoogleApiClient mGoogleApiClient;
     private Location mLocation;
-    private Handler mHandler;
+    private Handler mHandler, mSliderHandler;
     private Drawable mMarkerDrawable;
     private GeoPoint mSavedPoint;
     private LocationRequest mLocationRequestAccurate;
@@ -130,12 +137,10 @@ public class MapActivity extends BaseActivity implements
     private long _notifyID = -1;
 
 
-    public static Intent startIntentMap(Context context, double lat, double lon, String placeId) {
+    public static Intent startIntentMap(Context context, long id) {
         Intent intent = new Intent(context, MapActivity.class);
         intent.setAction(ACTION_MOVE_FROM_HISTORY);
-        intent.putExtra(EXTRA_LAT, lat);
-        intent.putExtra(EXTRA_LON, lon);
-        intent.putExtra(EXTRA_PLACE_ID, placeId);
+        intent.putExtra(EXTRA_SEARCH_ID, id);
         return intent;
     }
 
@@ -144,9 +149,10 @@ public class MapActivity extends BaseActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_map);
         mHandler = new Handler(Looper.getMainLooper());
+        mSliderHandler = new Handler(Looper.getMainLooper());
+
         mMapView = (MapView) findViewById(R.id.map);
         buttonCreate = findViewById(R.id.btn_create);
-        buttonAdd = findViewById(R.id.btn_add);
         buttonDelete = findViewById(R.id.btn_delete);
         buttonBackSlider = findViewById(R.id.btn_back_slider);
         buttonSearch = findViewById(R.id.btn_search);
@@ -154,11 +160,12 @@ public class MapActivity extends BaseActivity implements
         buttonZoomOut = findViewById(R.id.btn_zoom_out);
         buttonGpsFix = findViewById(R.id.btn_gps_fix);
         buttonMenu = findViewById(R.id.btn_menu);
+        mCurrentPlace = (CurrentPlaceView) findViewById(R.id.currentPlace);
+        buttonCreateMarkerRect = (CreateMarkerRect) findViewById(btn_rectcreate);
         containerSlider = (PagerContainer) findViewById(R.id.container_slider);
         sliderBackground = (FrameLayout) findViewById(R.id.slider_background);
         buttonSearch.setOnClickListener(this);
         buttonCreate.setOnClickListener(this);
-        buttonAdd.setOnClickListener(this);
         buttonDelete.setOnClickListener(this);
         buttonZoomIn.setOnClickListener(this);
         buttonZoomOut.setOnClickListener(this);
@@ -166,6 +173,9 @@ public class MapActivity extends BaseActivity implements
         buttonMenu.setOnClickListener(this);
         buttonBackSlider.setOnClickListener(this);
         sliderBackground.setOnClickListener(this);
+        buttonCreateMarkerRect.setOnClickListener(this);
+        mCurrentPlace.setOnClickListener(this);
+
         mMarkerDrawable = ContextCompat.getDrawable(this, R.drawable.ic_marker);
         if (!checkPermission(this)) {
             showPermissionDialog();
@@ -183,7 +193,7 @@ public class MapActivity extends BaseActivity implements
                 .build();
 
         Display display = getWindowManager().getDefaultDisplay();
-        android.graphics.Point size = new android.graphics.Point();
+        Point size = new Point();
         display.getSize(size);
         mScreenWidth = size.x;
         mScreenHeight = size.y;
@@ -222,7 +232,7 @@ public class MapActivity extends BaseActivity implements
         } catch (Exception e) {
             Log.d(TAG, "location service already disconnected");
         }
-        mHandler.removeCallbacks(mRunnable);
+        mHandler.removeCallbacks(mMapRunnable);
         startService(new Intent(this, LocationService.class));
     }
 
@@ -244,15 +254,27 @@ public class MapActivity extends BaseActivity implements
     @Subscribe
     public void onMapMotion(MapMotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            setControlsTrack();
+            mHandler.post(mMapMoveRunnable);
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
-            mHandler.postDelayed(mRunnable, BUTTON_DELAY);
+            mHandler.postDelayed(mMapRunnable, BUTTON_DELAY);
         }
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
+            case R.id.mapCreateRect:
+                hideCurrentPlace();
+                showCreateMarkerDialog();
+                break;
+            case R.id.tvCurrentPlace:
+                hideCurrentPlace();
+                startSearchActivity(mCurrentPlace.getCurrentPlaceText().getText().toString());
+                break;
+            case R.id.action_close_place:
+                hideCurrentPlace();
+                getIntent().setAction("");
+                break;
             case R.id.btn_gps_fix:
                 centerPosition();
                 break;
@@ -265,36 +287,28 @@ public class MapActivity extends BaseActivity implements
                 mController.zoomOut();
                 break;
             case R.id.btn_menu:
+                hideCurrentPlace();
+                mHandler.post(mMapControlRunnable);
                 List<MapQuestMarker> markers = DsqApplication.sDaoSession.getMapQuestMarkerDao().loadAll();
                 showSliderMarkers(markers);
                 break;
             case R.id.btn_search:
-                if(!mGoogleApiClient.isConnected()){
-                    return;
-                }
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    return;
-                }
-                Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                        mGoogleApiClient);
-                double latitude = lastLocation == null ? 0.0 :lastLocation.getLatitude();
-                double longitude = lastLocation == null ? 0.0 :lastLocation.getLongitude();
-
-                Intent intent = SearchActivity.buildIntent(this,latitude,longitude);
-                startActivity(intent);
+                startSearchActivity("");
                 break;
             case R.id.slider_background:
-                hideSlider();
-                break;
             case R.id.btn_back_slider:
                 hideSlider();
+                mHandler.post(mMapRunnable);
                 break;
             case R.id.btn_delete:
-//                hideSlider();
-                showDeleteDialog(selectedSlideMarkerId);
+                long selected = selectedSlideMarkerId;
+                hideSlider();
+                showDeleteDialog(selected);
                 break;
+            case R.id.btn_rectcreate:
             case R.id.btn_add:
             case R.id.btn_create:
+                hideCurrentPlace();
                 showCreateMarkerDialog();
                 break;
             default:
@@ -302,8 +316,8 @@ public class MapActivity extends BaseActivity implements
         }
     }
 
-    private void handleNotificationMarker(Intent intent){
-        if(intent.getAction().equals(ACTION_NOTIFICATION)) {
+    private void handleNotificationMarker(Intent intent) {
+        if (intent.getAction().equals(ACTION_NOTIFICATION)) {
             double lat = intent.getDoubleExtra(EXTRA_LAT, 0.0);
             double lon = intent.getDoubleExtra(EXTRA_LON, 0.0);
             _notifyID = intent.getLongExtra(EXTRA_MARKER_ID, -1);
@@ -317,6 +331,7 @@ public class MapActivity extends BaseActivity implements
             ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).cancel(ID_PROXIMITY_NOTIFICATION);
         }
     }
+
     private void hideSlider() {
         selectedSlideMarkerId = -1;
         sliderBackground.setVisibility(View.GONE);
@@ -324,13 +339,31 @@ public class MapActivity extends BaseActivity implements
         mController.setPositionNoAnimationTo(mSavedPoint);
     }
 
-    private void showSliderMarkers(final List<MapQuestMarker> markers) {
+    private void hideCurrentPlace() {
+        mCurrentPlace.hide();
+        buttonZoomIn.setVisibility(View.VISIBLE);
+        buttonZoomOut.setVisibility(View.VISIBLE);
+        buttonCreate.setVisibility(View.VISIBLE);
+        buttonCreateMarkerRect.setVisibility(View.INVISIBLE);
+    }
 
+    private void showCurrentPlace() {
+        mCurrentPlace.show();
+        buttonCreateMarkerRect.setVisibility(View.VISIBLE);
+        buttonZoomIn.setVisibility(View.INVISIBLE);
+        buttonZoomOut.setVisibility(View.INVISIBLE);
+        buttonCreate.setVisibility(View.INVISIBLE);
+    }
+
+    private void showSliderMarkers(final List<MapQuestMarker> markers) {
         final MarkerPagerAdapter adapter = new MarkerPagerAdapter(this, markers);
         final List<MapQuestMarker> list = adapter.getList();
-        if(list.isEmpty())
+        if (list.isEmpty())
             return;
-        selectedSlideMarkerId = markers.get(0).getId();
+
+        mCurrentPlace.setVisibility(View.GONE);
+        MapQuestMarker marker = markers.get(0);
+        selectedSlideMarkerId = marker.getId();
         sliderBackground.setVisibility(View.VISIBLE);
         final ViewPager pager = containerSlider.getViewPager();
         pager.setAdapter(adapter);
@@ -346,39 +379,43 @@ public class MapActivity extends BaseActivity implements
             @Override
             public void onPageSelected(int position) {
                 Log.d(TAG, "Page selected : " + position);
-                if(position < list.size()) {
-                    MapQuestMarker marker = list.get(position);
+                if (position < list.size()) {
+                    final MapQuestMarker marker = list.get(position);
+                    Log.d(TAG, "MapQuestMarker selected : " + marker);
                     selectedSlideMarkerId = marker.getId();
-                    setSliderHeightOffset(marker);
+                    final Runnable runnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            setSliderHeightOffset(marker);
+                        }
+                    };
+                    mSliderHandler.postDelayed(runnable, 300);
                 }
             }
 
             @Override
             public void onPageScrollStateChanged(int state) {
-
             }
         });
         mSavedPoint = mController.getMapCenter();
-        GeoPoint point = new GeoPoint(list.get(0).getLatitude(), list.get(0).getLongitude());
-        mController.setPositionAnimationTo(point);
-
+        setSliderHeightOffset(marker);
         buttonMenu.setVisibility(View.GONE);
     }
 
-    private void setSliderHeightOffset(MapQuestMarker marker){
+    private void setSliderHeightOffset(MapQuestMarker marker) {
         GeoPoint point = new GeoPoint(marker.getLatitude(), marker.getLongitude());
         ScreenPoint screenPoint = mController.getScreenPoint(point);
         float x = screenPoint.getX();
         float y = screenPoint.getY();
-        y+=SLIDER_HEIGHT_PADDING;
+        y -= SLIDER_HEIGHT_PADDING;
         screenPoint.setY(y);
 
         GeoPoint point1 = mController.getGeoPoint(screenPoint);
-        mController.setPositionAnimationTo(point1);
+        mController.setPositionNoAnimationTo(point1);
     }
 
     private void showCreateMarkerDialog() {
-        setControlsTrack();
+        mHandler.post(mMapControlRunnable);
         final Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_create_marker);
@@ -392,15 +429,15 @@ public class MapActivity extends BaseActivity implements
         dialog.findViewById(R.id.dialog_background).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setControlsUnTrack();
                 dialog.dismiss();
+                mHandler.post(mMapRunnable);
             }
         });
         dialog.findViewById(R.id.btn_cancel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setControlsUnTrack();
                 dialog.dismiss();
+                mHandler.post(mMapRunnable);
             }
         });
         dialog.findViewById(R.id.ic_confirm).setOnClickListener(new View.OnClickListener() {
@@ -410,19 +447,27 @@ public class MapActivity extends BaseActivity implements
                         ((EditText) dialog.findViewById(R.id.edit_title)).getText().toString(),
                         ((EditText) dialog.findViewById(R.id.edit_text)).getText().toString()
                 );
+                mController.notifyRepaint();
                 dialog.dismiss();
+                mHandler.post(mMapRunnable);
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        buttonCreate.setVisibility(View.GONE);
+                    }
+                });
             }
         });
         dialog.show();
     }
 
-    public void editMarker(String title,String text,final long id){
+    public void editMarker(String title, String text, final long id) {
         hideSlider();
-        showEditMarkerDialog(title,text,id);
+        showEditMarkerDialog(title, text, id);
     }
 
     private void showEditMarkerDialog(String title, String text, final long id) {
-        setControlsTrack();
+        mHandler.post(mMapControlRunnable);
         final Dialog dialog = new Dialog(this);
         dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
         dialog.setContentView(R.layout.dialog_create_marker);
@@ -440,14 +485,14 @@ public class MapActivity extends BaseActivity implements
         dialog.findViewById(R.id.dialog_background).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setControlsUnTrack();
+                mHandler.post(mMapRunnable);
                 dialog.dismiss();
             }
         });
         dialog.findViewById(R.id.btn_cancel).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                setControlsUnTrack();
+                mHandler.post(mMapRunnable);
                 dialog.dismiss();
             }
         });
@@ -457,7 +502,8 @@ public class MapActivity extends BaseActivity implements
                 MapQuestMarker mapQuestMarker = DsqApplication.sDaoSession.getMapQuestMarkerDao().loadByRowId(id);
                 mapQuestMarker.setText(editText.getText().toString());
                 mapQuestMarker.setTitle(editTitle.getText().toString());
-                DsqApplication.sDaoSession.getMapQuestMarkerDao().update(mapQuestMarker);dialog.dismiss();
+                DsqApplication.sDaoSession.getMapQuestMarkerDao().update(mapQuestMarker);
+                dialog.dismiss();
             }
         });
         dialog.show();
@@ -467,20 +513,22 @@ public class MapActivity extends BaseActivity implements
         GeoPoint point = mController.getMapCenter();
         Intent intent = getIntent();
         String action = intent.getAction();
-        String placeId = intent.getStringExtra(EXTRA_PLACE_ID);
-        double extraLat = intent.getDoubleExtra(EXTRA_LAT, 0.0);
-        double extraLon = intent.getDoubleExtra(EXTRA_LON, 0.0);
-        if(action != null && action.equals(ACTION_MOVE_FROM_HISTORY)
+        long id = intent.getLongExtra(EXTRA_SEARCH_ID, -1);
+        SearchHistoryItem load = DsqApplication.sDaoSession.getSearchHistoryItemDao().load(id);
+        String placeId = load != null ? load.getPlaceId() : "";
+        double extraLat = load != null ? load.getLatitude() : 0.0;
+        double extraLon = load != null ? load.getLongitude() : 0.0;
+        if (action != null && action.equals(ACTION_MOVE_FROM_HISTORY)
                 && !TextUtils.isEmpty(placeId) &&
                 extraLat == point.getLat() &&
-                extraLon == point.getLon()){
-            Log.i(TAG,"saving place id....");
+                extraLon == point.getLon()) {
+            Log.i(TAG, "saving place id....");
             Place place = new Place(placeId);
             DsqApplication.sDaoSession.getPlaceDao().save(place);
         }
 //
-        MapQuestMarker marker =  new MapQuestMarker(point.getLat(), point.getLon(), title, text);
-        Log.i("MAP_TAG","marker create in lat: " + marker.getLatitude() +" lon:" + point.getLon());
+        MapQuestMarker marker = new MapQuestMarker(point.getLat(), point.getLon(), title, text);
+        Log.i("MAP_TAG", "marker create in lat: " + marker.getLatitude() + " lon:" + point.getLon());
         DsqApplication.sDaoSession.getMapQuestMarkerDao().save(marker);
         List<MapQuestMarker> markers = new ArrayList<>(1);
         markers.add(marker);
@@ -516,10 +564,8 @@ public class MapActivity extends BaseActivity implements
 
     private void showInfoWindow(int x, int y, String title, String text, final long id) {
         Log.d(TAG, "clicked marker with id : " + id);
-        mHandler.removeCallbacks(mRunnable);
-        mHandler.removeCallbacks(mRunnable);
+        mHandler.removeCallbacks(mMapRunnable);
         buttonCreate.setVisibility(View.INVISIBLE);
-        buttonAdd.setVisibility(View.INVISIBLE);
         buttonSearch.setVisibility(View.INVISIBLE);
         buttonZoomIn.setVisibility(View.INVISIBLE);
         buttonZoomOut.setVisibility(View.INVISIBLE);
@@ -573,7 +619,7 @@ public class MapActivity extends BaseActivity implements
         dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override
             public void onDismiss(DialogInterface dialog) {
-                setControlsUnTrack();
+                mHandler.post(mMapRunnable);
             }
         });
         dialog.findViewById(R.id.btn_delete).setOnClickListener(new View.OnClickListener() {
@@ -620,9 +666,8 @@ public class MapActivity extends BaseActivity implements
     private void centerPosition() {
         if (checkPermission(this)) {
             mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            if(mLocation != null) {
+            if (mLocation != null) {
                 Log.d(TAG, "Last location : " + mLocation.getLatitude() + ", " + mLocation.getLongitude());
-
                 GeoPoint point = new GeoPoint(mLocation.getLatitude(), mLocation.getLongitude());
                 mController.setPositionNoAnimationTo(point);
             }
@@ -634,20 +679,22 @@ public class MapActivity extends BaseActivity implements
         mController.setZoomCurrent(mZoom);
     }
 
-    private void setControlsTrack() {
-        mHandler.removeCallbacks(mRunnable);
-        buttonCreate.setVisibility(View.GONE);
+    private void setControlsTrack(boolean hideButtonCreate) {
+        hideCurrentPlace();
+        mHandler.removeCallbacks(mMapRunnable);
+        buttonCreate.setVisibility(hideButtonCreate ? View.GONE : View.VISIBLE);
+        buttonCreateMarkerRect.setVisibility(View.GONE);
         buttonSearch.setVisibility(View.GONE);
         buttonZoomIn.setVisibility(View.GONE);
         buttonZoomOut.setVisibility(View.GONE);
         buttonGpsFix.setVisibility(View.GONE);
         buttonMenu.setVisibility(View.GONE);
-        buttonAdd.setVisibility(View.VISIBLE);
     }
 
     private void setControlsUnTrack() {
-        buttonAdd.setVisibility(View.GONE);
+        hideCurrentPlace();
         buttonCreate.setVisibility(View.VISIBLE);
+        buttonCreateMarkerRect.setVisibility(View.GONE);
         buttonSearch.setVisibility(View.VISIBLE);
         buttonZoomIn.setVisibility(View.VISIBLE);
         buttonZoomOut.setVisibility(View.VISIBLE);
@@ -660,12 +707,29 @@ public class MapActivity extends BaseActivity implements
         mMapView.setVisibility(View.VISIBLE);
     }
 
-    private void showDeleteDialog(final long id){
-        if(id == -1){
+    private void startSearchActivity(String currentPlaceText) {
+        if (!mGoogleApiClient.isConnected()) {
+            return;
+        }
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        Location lastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                mGoogleApiClient);
+        double latitude = lastLocation == null ? 0.0 : lastLocation.getLatitude();
+        double longitude = lastLocation == null ? 0.0 : lastLocation.getLongitude();
+
+        Intent intent = SearchActivity.buildIntent(this, currentPlaceText, latitude, longitude);
+        startActivity(intent);
+    }
+
+    private void showDeleteDialog(final long id) {
+        if (id == -1) {
             return;
         }
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setMessage("удалить маркер?");
+        builder.setMessage("Удалить маркер?");
         builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(final DialogInterface dialog, int which) {
@@ -674,8 +738,9 @@ public class MapActivity extends BaseActivity implements
                 session.setListener(new AsyncOperationListener() {
                     @Override
                     public void onAsyncOperationCompleted(AsyncOperation operation) {
-                        handleMarkers();
                         dialog.dismiss();
+                        mHandler.postDelayed(mMapRunnable, 0);
+                        handleMarkers();
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -695,11 +760,13 @@ public class MapActivity extends BaseActivity implements
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
+                mHandler.postDelayed(mMapRunnable, 0);
             }
         });
         builder.show();
 
     }
+
     private void showDeleteAllDialog() {
         final AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setMessage("удалить все маркеры?");
@@ -752,22 +819,32 @@ public class MapActivity extends BaseActivity implements
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         Intent intent = getIntent();
-        if(intent != null && intent.getAction() != null && intent.getAction().equals(ACTION_MOVE_FROM_HISTORY)) {
-            double lat = intent.getDoubleExtra(EXTRA_LAT, -1);
-            double lon = intent.getDoubleExtra(EXTRA_LON, -1);
-            GeoPoint point = new GeoPoint(lat,lon);
-            mController.setPositionNoAnimationTo(point);
-        }else if(intent != null && intent.getAction() != null && intent.getAction().equals(ACTION_NOTIFICATION))
-        {handleNotificationMarker(intent);}
-        else
-           centerPosition();
 
-           if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-               return;
-           }
-        if(mGoogleApiClient.isConnected())
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequestCoarse, this);
+        if (intent != null && intent.getAction() != null &&
+                intent.getAction().equals(ACTION_MOVE_FROM_HISTORY)) {
+            mHandler.postDelayed(mSearchRunnable, 0);
+            Long id = intent.getLongExtra(EXTRA_SEARCH_ID, -1);
+            SearchHistoryItem load = DsqApplication.sDaoSession.getSearchHistoryItemDao().load(id);
+            String title = load.getTitle();
+            double lat = load.getLatitude();
+            double lon = load.getLongitude();
+            GeoPoint point = new GeoPoint(lat, lon);
+            mController.setPositionNoAnimationTo(point);
+            mCurrentPlace.setText(title);
+
+        } else if (intent != null && intent.getAction() != null
+                && intent.getAction().equals(ACTION_NOTIFICATION)) {
+            handleNotificationMarker(intent);
+        } else
+            centerPosition();
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        if (mGoogleApiClient.isConnected())
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequestCoarse, this);
     }
+
 
     @Override
     public void onLocationChanged(Location location) {
@@ -775,7 +852,7 @@ public class MapActivity extends BaseActivity implements
         List<MapQuestMarker> markers = DsqApplication.sDaoSession.getMapQuestMarkerDao().loadAll();
         boolean isNearToMarker = false;
         StringBuilder notificationMessage = new StringBuilder();
-        double lat = 0.0,lon = 0.0;
+        double lat = 0.0, lon = 0.0;
         long id = -1;
         for (MapQuestMarker marker : markers) {
             double distance = Utils.calculateDistance(marker.getLatitude(), marker.getLongitude(), mLocation.getLatitude(), mLocation.getLongitude());
@@ -786,7 +863,7 @@ public class MapActivity extends BaseActivity implements
                 lat = marker.getLatitude();
                 lon = marker.getLongitude();
                 id = marker.getId();
-                if(id == _notifyID)
+                if (id == _notifyID)
                     continue;
                 notificationMessage.append(getString(R.string.distance_to));
                 notificationMessage.append(" ");
@@ -806,14 +883,14 @@ public class MapActivity extends BaseActivity implements
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequestAccurate, this);
             isHighAccuracyMode = true;
-        } else if (!isNearToMarker && isHighAccuracyMode) {
+        } else if (!isNearToMarker && isHighAccuracyMode && mGoogleApiClient.isConnected()) {
             LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequestCoarse, this);
         }
 
         if (notificationMessage.length() > 1) {
             notificationMessage.setLength(notificationMessage.length() - 1);
-            Notification notification = Notifications.createNotification(this, getString(R.string.notification_title), notificationMessage.toString(),id,lat,lon);
+            Notification notification = Notifications.createNotification(this, getString(R.string.notification_title), notificationMessage.toString(), id, lat, lon);
             ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).notify(ID_PROXIMITY_NOTIFICATION, notification);
         }
     }
@@ -826,7 +903,7 @@ public class MapActivity extends BaseActivity implements
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
         int errorCode = connectionResult.getErrorCode();
-        Log.e("MAP_TAG","error:" + errorCode);
+        Log.e("MAP_TAG", "error:" + errorCode);
     }
 
     @Override
@@ -848,12 +925,39 @@ public class MapActivity extends BaseActivity implements
         }
     }
 
-    private Runnable mRunnable = new Runnable() {
+
+    private Runnable mMapRunnable = new Runnable() {
         @Override
         public void run() {
-            setControlsUnTrack();
+            if (selectedSlideMarkerId == -1)// no slider
+                setControlsUnTrack();
         }
     };
+
+
+    private Runnable mMapControlRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (selectedSlideMarkerId == -1)// no slider
+                setControlsTrack(true);
+        }
+    };
+
+    private Runnable mMapMoveRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (selectedSlideMarkerId == -1)// no slider
+                setControlsTrack(false);
+        }
+    };
+
+    private Runnable mSearchRunnable = new Runnable() {
+        @Override
+        public void run() {
+            showCurrentPlace();
+        }
+    };
+
 
     private class MyOverlayItem extends OverlayItem {
         public long id;
@@ -879,7 +983,7 @@ public class MapActivity extends BaseActivity implements
                 List<MapQuestMarker> mapQuestMarkers = mapQuestMarkerDao.loadAll();
                 MapQuestMarker load = mapQuestMarkerDao.load(overlayItem.id);// extra load for update data
                 mapQuestMarkers.remove(load);
-                mapQuestMarkers.add(0,load);
+                mapQuestMarkers.add(0, load);
                 setSliderHeightOffset(load);
 
                 showSliderMarkers(mapQuestMarkers);

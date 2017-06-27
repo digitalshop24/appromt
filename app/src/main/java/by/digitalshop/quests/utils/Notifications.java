@@ -16,13 +16,16 @@ import static ru.yandex.core.CoreApplication.getApplicationContext;
 
 public class Notifications {
 
-    public static Notification createNotification(Context context, String title, String subject,long id,double lat,double lon) {
-        Intent notificationIntent = new Intent(getApplicationContext(), MapActivity.class);
+    public static Notification createNotification(Context context, String title, String subject, long id, double lat, double lon) {
+        if (context == null) {
+            context = getApplicationContext();
+        }
+        Intent notificationIntent = new Intent(context, MapActivity.class);
         notificationIntent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         notificationIntent.setAction(MapActivity.ACTION_NOTIFICATION);
-        notificationIntent.putExtra(MapActivity.EXTRA_MARKER_ID,id);
-        notificationIntent.putExtra(MapActivity.EXTRA_LAT,lat);
-        notificationIntent.putExtra(MapActivity.EXTRA_LON,lon);
+        notificationIntent.putExtra(MapActivity.EXTRA_MARKER_ID, id);
+        notificationIntent.putExtra(MapActivity.EXTRA_LAT, lat);
+        notificationIntent.putExtra(MapActivity.EXTRA_LON, lon);
 
         PendingIntent activity = PendingIntent.getActivity(getApplicationContext(), 0, notificationIntent, PendingIntent.FLAG_UPDATE_CURRENT);
         Notification noti = new Notification.Builder(context)

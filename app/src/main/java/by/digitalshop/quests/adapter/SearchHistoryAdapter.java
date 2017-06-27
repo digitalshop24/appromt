@@ -86,11 +86,7 @@ public class SearchHistoryAdapter extends BaseSearchAdapter<SearchHistoryItem> {
                         Activity activity = mRef.get();
                         int adapterPosition = getAdapterPosition();
                         final SearchHistoryItem searchHistoryItem = getItems().get(adapterPosition);
-                        String placeId = searchHistoryItem.getPlaceId();
-                        double latitude = searchHistoryItem.getLatitude();
-                        double longitude = searchHistoryItem.getLongitude();
-                        activity.startActivity(MapActivity.startIntentMap(activity, latitude, longitude,placeId
-                        ));
+                        activity.startActivity(MapActivity.startIntentMap(activity, searchHistoryItem.getId()));
                     }
                 }
             });

@@ -37,8 +37,8 @@
     <TextView
         android:textColor="@android:color/white"
         android:id="@+id/intro_text"
-        android:maxLines="2"
-        android:maxEms="50"
+        android:maxLines="4"
+        android:maxEms="150"
         android:layout_marginLeft="45dp"
         android:layout_marginRight="45dp"
         android:layout_width="wrap_content"
@@ -48,9 +48,9 @@
         android:gravity="center_horizontal"
         android:ellipsize="end"
         android:textAppearance="?android:textAppearanceSmall"
-        android:layout_above="@+id/buttonRemind"
+        android:layout_below="@+id/center_sep"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="40dp" />
+        android:layout_marginTop="20dp" />
 
     <Button
         android:onClick="onStartClick"
@@ -58,11 +58,10 @@
         android:text="@string/remind"
         android:textAllCaps="true"
         style="@style/MaterialButton"
-
+        android:layout_below="@+id/intro_text"
         android:layout_width="160dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
-        android:layout_alignParentBottom="true"
+        android:layout_marginTop="40dp"
         android:layout_centerHorizontal="true"
         android:id="@+id/buttonRemind" />
 

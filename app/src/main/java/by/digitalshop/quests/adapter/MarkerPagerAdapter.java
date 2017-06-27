@@ -21,14 +21,12 @@ import by.digitalshop.quests.utils.TextUtils;
 public class MarkerPagerAdapter extends PagerAdapter {
     private List<MapQuestMarker> mMapQuestMarkers;
     private LayoutInflater mLayoutInflater;
-    private boolean isEdit = false;
     private MapActivity mapActivity;
 
 
     public MarkerPagerAdapter(MapActivity activity, List<MapQuestMarker> markers) {
         mLayoutInflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         mMapQuestMarkers = markers;
-        isEdit = markers.size() == 1;
         mapActivity = activity;
 
     }
@@ -42,12 +40,16 @@ public class MarkerPagerAdapter extends PagerAdapter {
         ((TextView) view.findViewById(R.id.text_title)).setText(TextUtils.firstCapitalString(title));
         String text = marker.getText();
         ((TextView) view.findViewById(R.id.text_text)).setText(TextUtils.firstCapitalString(text));
-        ((TextView) view.findViewById(R.id.text_text)).setOnClickListener(new View.OnClickListener() {
+        ((TextView) view.findViewById(R.id.text_title)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(isEdit){
-                    mapActivity.editMarker(marker.getTitle(),marker.getText(),marker.getId());
-                }
+                mapActivity.editMarker(marker.getTitle(),marker.getText(),marker.getId());
+            }
+        });
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mapActivity.editMarker(marker.getTitle(),marker.getText(),marker.getId());
             }
         });
         return view;

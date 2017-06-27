@@ -4,4 +4,6 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="info_window_width">240dp</dimen>
     <dimen name="info_window_height">320dp</dimen>
+    <dimen name="current_place_height">180dp</dimen>
+    <dimen name="scale_search_back_icon">32dp</dimen>
 </resources>
